@@ -6,27 +6,47 @@
     <link rel="stylesheet" href="css/style.css">
 <script type="text/javascript">
 
-window.onload = clickBtn;
+window.onload = initCalc;
+
+function initCalc() {
+  clickBtn();
+  calc_by_server('last_results');
+}
 
 function calc_by_server(str) {
-  var res = null;
-  var data = {'str': str};
+  let data = {'str': str};
 
   fetch('forajax.php', {
-    method: 'POST',
+    method: 'post',
     headers: {
       "Content-type": "application/x-www-form-urlencoded; charset=UTF-8;"
     },
     body: JSON.stringify(data)
   })
   .then(function(response) {
-          return response.text();
+    if(response.status != 200) {
+      return Promise.reject(new Error(response.statusText))
+    }
+    return Promise.resolve(response);
   })
-  .then(function(resultdata) {
-          document.getElementById('result').value = str + '\r\n' + '=' + '\r\n' + resultdata;
+  .then(function(response) {
+          //return response.text();
+          return response.json();
+  })
+  .then(function(data) {
+          //document.getElementById('result').value = str + '\r\n' + '=' + '\r\n' + data;
+          if(document.getElementById('result').value != '') {
+              document.getElementById('result').value = data[0].formula + '\r\n' + '=' + '\r\n' + data[0].result;
+          }
+          let str = '';
+          let i = 0;
+          for(i; i < data.length; i++) {
+              str += (i+1) + '. ' + data[i].formula + ' = ' + data[i].result + '\r\n';
+          }
+          document.getElementById('last_results').value = str;
   })
   .catch(function(error){
-          console.error(error);
+          console.log('error', error);
   });
 }
 
@@ -163,7 +183,8 @@ function getClickBtn(btn) {//валидация вводимых данных, �
           <!--</form>-->
         </div>
         <div class="bottom">
-          <br>
+          <h2>5 последних результатов</h2>
+          <textarea class="last_results" id="last_results" col="30" rows="5" wrap="off" readonly></textarea>
         </div>
       </div>
       <div class="right">
